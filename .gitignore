@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+reports/*.pdf
+reports/*.html
+reports/*.docx
+data/*
+outputs/*
+r/archive/*
