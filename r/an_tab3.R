@@ -51,6 +51,7 @@ dt <- dt[, .(
   part_employed,
   part_work_place,
   part_attend_work_yesterday,
+  part_employstatus,
   ## Contacts
   n_cnt,
   n_cnt_work,
@@ -59,12 +60,32 @@ dt <- dt[, .(
   n_cnt_school
 )]
 
+
+## Fixing part_employed to include unemployment and retired
+dt[grepl("unemp",dt$part_employstatus), part_employed := "Unemployed"]
+dt[dt$part_employstatus=="full-time parent, homemaker", part_employed := "Unemployed"]
+dt[dt$part_employstatus=="long-term sick or disabled", part_employed := "Unemployed"]
+dt[dt$part_employstatus=="student/pupil", part_employed := "Unemployed"]
+dt[dt$part_employstatus=="retired", part_employed := "Retired"]
+
+dt[is.na(part_employed), part_employed := "remove"]
+#dt[is.na(part_attend_work_yesterday), part_employed := "remove"]
+#dt[is.na(part_work_place), part_employed := "remove"]
+
+
+# Fixing column with symptoms to be numbers
+part_symp_cols <- grep("part_symp", names(dt), value = TRUE)
+for (col in part_symp_cols) {
+  set(dt, j = col, value = as.numeric(dt[[col]]))
+}
+
+
 dt[, part_symp_ache := max(part_symp_bodyaches,
                            part_symp_headache,
                            na.rm = TRUE),
    by = part_uid]
 
-dt[, part_symp_fatigue := as.numeric(part_symp_fatigue)]
+
 
 dt[, part_symp_any := max(part_symp_fever,
                           part_symp_cough,
@@ -75,10 +96,6 @@ dt[, part_symp_any := max(part_symp_fever,
                           part_symp_fatigue, na.rm = TRUE),
    by = part_uid]
 
-
-dt[is.na(part_employed), part_employed := "remove"]
-dt[is.na(part_attend_work_yesterday), part_employed := "remove"]
-dt[is.na(part_work_place), part_employed := "remove"]
 
 
 dta <- dt
@@ -101,7 +118,9 @@ get_mean <- function(dt_, group_var_, cnt_var = "n_cnt"){
                    ")")]
   x1[get %in% c("Unknown", "Other"),
      num:= formatC(num, big.mark = ",")]
-  x1 <- x1[get != "remove"]
+  #x1 <- x1[get != "remove"]
+  x1 <- x1[!(get %in% c("Unknown", "Other", "remove"))]
+  
   x1
 }
 
@@ -185,7 +204,7 @@ make_row <- function(row_, cat , val, top_row = FALSE){
 ## Format each row, remember each var is now called get
 
 ## Characteristics
-row_1   <- make_row(row_count, "All", "")
+row_1   <- make_row(row_count, "All", "Mean (SD)")
 row_2   <- make_row(row_adult, c("Adult", "Child"), "")
 row_3   <- make_row(row_age_child, cat = "Age group (Children)", val = row_age_child$get, top_row = TRUE)
 row_4   <- make_row(row_age_adult, cat = "Age group (Adult)", val = row_age_adult$get, top_row = TRUE)

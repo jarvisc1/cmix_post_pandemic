@@ -153,10 +153,240 @@ combined_dta <- rbind(
   
 
 
+
+####### add POLYMOD
+
+library(socialmixr)
+library(data.table)
+
+data("polymod")
+
+source('r/functions/functions.R')
+
+parts_poly = data.table(polymod$participants)
+conts_poly = data.table(polymod$contacts)
+
+parts_poly[!is.na(part_age), part_age_est_min := part_age]
+parts_poly[!is.na(part_age), part_age_est_max := part_age]
+conts_poly[!is.na(cnt_age_exact), cnt_age_est_min := cnt_age_exact]
+conts_poly[!is.na(cnt_age_exact), cnt_age_est_max := cnt_age_exact]
+conts_poly = conts_poly[!is.na(cnt_age_est_max)]
+
+## Add in weekday var
+weekday_ <- function(x){
+  x[dayofweek == 0, weekday := "Sunday"]
+  x[dayofweek == 1, weekday := "Monday"]
+  x[dayofweek == 2, weekday := "Tuesday"]
+  x[dayofweek == 3, weekday := "Wednesday"]
+  x[dayofweek == 4, weekday := "Thursday"]
+  x[dayofweek == 5, weekday := "Friday"]
+  x[dayofweek == 6, weekday := "Saturday"]
+  x
+}
+
+parts_poly <- weekday_(parts_poly)
+
+conts_poly <- merge(conts_poly, parts_poly, by = "part_id")
+conts_poly <- weekday_(conts_poly)
+
+## Add in survey round
+parts_poly[, survey_round := 1]
+conts_poly[, survey_round := 1]
+
+
+
+## Subset
+
+## Get for each country
+parts_poly_uk = parts_poly[country == 'United Kingdom']
+parts_poly_be = parts_poly[country == 'Belgium']
+conts_poly_uk = conts_poly[part_id %in% parts_poly_uk$part_id]
+conts_poly_be = conts_poly[part_id %in% parts_poly_be$part_id]
+
+
+# NL from a different data source -----------------------------------------
+parts_poly_nl <- as.data.table(read.delim(file = "data/Participants_20071108_NL.txt"))
+conts_poly_nl <- as.data.table(read.delim(file = "data/Contacts_20071108_NL.txt"))
+
+
+
+# Select relevant columns
+parts_poly_nl  <- subset(parts_poly_nl, select = c("local_id", "participant_age", "dayofweek"))
+
+conts_poly_nl  <- subset(conts_poly_nl, select = c("local_id","cnt_home"
+                                                   ,"cnt_work"
+                                                   ,"cnt_school"
+                                                   ,"cnt_transport"
+                                                   ,"cnt_leisure"
+                                                   ,"cnt_otherplace"
+                                                    ))
+#substitute the "x" with a TRUE and make the column a boolean for columns: cnt_home,cnt_work,cnt_school,cnt_transport,cnt_leisure,cnt_otherplace
+conts_poly_nl[, cnt_home := ifelse(cnt_home == "x", TRUE, FALSE)][, cnt_work := ifelse(cnt_work == "x", TRUE, FALSE)
+                ][, cnt_school := ifelse(cnt_school == "x", TRUE, FALSE)][, cnt_transport := ifelse(cnt_transport == "x", TRUE, FALSE)
+                    ][, cnt_leisure := ifelse(cnt_leisure == "x", TRUE, FALSE)][, cnt_otherplace := ifelse(cnt_otherplace == "x", TRUE, FALSE)]
+
+
+colnames(parts_poly_nl) <- c("part_id", "part_age", "dayofweek")
+colnames(conts_poly_nl) <- c("part_id","cnt_home","cnt_work","cnt_school","cnt_transport","cnt_leisure","cnt_otherplace")
+
+conts_poly_nl <- merge(conts_poly_nl, parts_poly_nl[,c("part_id", "dayofweek")], by = "part_id")
+# 
+# conts_poly_nl[, cnt_age_est_min := as.integer(cnt_age_est_min)]
+# conts_poly_nl[is.na(cnt_age_est_max), cnt_age_est_max := as.integer(cnt_age_est_min)]
+# # 
+# parts_poly_nl[!is.na(part_age), part_age_est_min := part_age]
+# parts_poly_nl[!is.na(part_age), part_age_est_max := part_age]
+# 
+## Add in named days
+parts_poly_nl <- weekday_(parts_poly_nl)
+conts_poly_nl <- weekday_(conts_poly_nl)
+
+parts_poly_nl[, survey_round := 1]
+conts_poly_nl[, survey_round := 1]
+
+# set country
+parts_poly_uk$country<-"UK (POLYMOD)"
+parts_poly_be$country<-"BE (POLYMOD)"
+parts_poly_nl$country<-"NL (POLYMOD)"
+common_columns<-c("part_id","part_age","dayofweek","weekday","survey_round","country")
+parts_poly_subset<-rbind(parts_poly_uk[,..common_columns],parts_poly_nl,parts_poly_be[,..common_columns])
+
+common_columns<-c("part_id","cnt_home","cnt_work","cnt_school","cnt_transport","cnt_leisure","cnt_otherplace",
+                 "dayofweek","weekday","survey_round"  )
+conts_poly_subset<-rbind(conts_poly_uk[,..common_columns],conts_poly_nl,conts_poly_be[,..common_columns])
+
+
+result <- conts_poly_subset[, .(
+  n_cnt= sum((cnt_home == TRUE)|(cnt_work == TRUE)|(cnt_transport == TRUE)|(cnt_school == TRUE)|(cnt_leisure == TRUE)|(cnt_otherplace == TRUE)) 
+  ,n_cnt_home = sum(cnt_home == TRUE)
+  ,n_cnt_work = sum(cnt_work == TRUE)
+  ,n_cnt_school = sum(cnt_school == TRUE)
+  ,n_cnt_other = sum((cnt_transport == TRUE)|(cnt_leisure == TRUE)|(cnt_otherplace == TRUE) ) 
+  
+), by = part_id]
+
+dt_polymod<-merge(result, parts_poly_subset[,c("part_id","part_age","country","weekday")], by="part_id")
+# set dayweight=5/7 if column weekday is a weekday, else set dayweight=2/7
+dt_polymod[, dayweight := ifelse(weekday %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), 5/7, 2/7)]
+
+
+dt_polymod$n_cnt[is.na(dt_polymod$n_cnt)]<-0
+dt_polymod$n_cnt_home[is.na(dt_polymod$n_cnt_home)]<-0
+dt_polymod$n_cnt_work[is.na(dt_polymod$n_cnt_work)]<-0
+dt_polymod$n_cnt_school[is.na(dt_polymod$n_cnt_school)]<-0
+dt_polymod$n_cnt_other[is.na(dt_polymod$n_cnt_other)]<-0
+
+dt_polymod$n_cnt_work[is.na(dt_polymod$n_cnt_work)]<-0
+boot_95(dt$n_cnt_work, n = 1000, dt$dayweight)
+
+
+dt_means_all_polymod <- dt_polymod[, .(
+  All    = boot_95(n_cnt, n = bs_samp, weekday_weights = dayweight),
+  Home   = boot_95(n_cnt_home, n = bs_samp, weekday_weights = dayweight),
+  Work   = boot_95(n_cnt_work, n = bs_samp, weekday_weights = dayweight),
+  School = boot_95(n_cnt_school, n = bs_samp, weekday_weights = dayweight),
+  Other  = boot_95(n_cnt_other, n = bs_samp, weekday_weights = dayweight)
+), 
+by = .(country)]
+
+
+
+dt_means_adult_polymod <- dt_polymod[part_age >= 18, .(
+  All    = boot_95(n_cnt, n = bs_samp, weekday_weights = dayweight),
+  Home   = boot_95(n_cnt_home, n = bs_samp, weekday_weights = dayweight),
+  Work   = boot_95(n_cnt_work, n = bs_samp, weekday_weights = dayweight),
+  School = boot_95(n_cnt_school, n = bs_samp, weekday_weights = dayweight),
+  Other  = boot_95(n_cnt_other, n = bs_samp, weekday_weights = dayweight)
+), 
+by = .(country)]
+
+dt_means_child_polymod <- dt_polymod[part_age < 18, .(
+  All    = boot_95(n_cnt, n = bs_samp, weekday_weights = dayweight),
+  Home   = boot_95(n_cnt_home, n = bs_samp, weekday_weights = dayweight),
+  Work   = boot_95(n_cnt_work, n = bs_samp, weekday_weights = dayweight),
+  School = boot_95(n_cnt_school, n = bs_samp, weekday_weights = dayweight),
+  Other  = boot_95(n_cnt_other, n = bs_samp, weekday_weights = dayweight)
+), 
+by = .(country)]
+
+
+all_mean_polymod <- dt_means_all_polymod %>% 
+  melt(id.vars = "country") %>% 
+  dcast(variable ~ country)
+adult_mean_polymod <- dt_means_adult_polymod %>% 
+  melt(id.vars = "country") %>% 
+  dcast(variable ~ country)
+child_mean_polymod <- dt_means_child_polymod %>% 
+  melt(id.vars = "country") %>% 
+  dcast(variable ~ country)
+
+## Title rows for table two
+empty_row_polymod <- data.table(variable = "",
+                        `UK (POLYMOD)`= "",
+                        `BE (POLYMOD)`= "",
+                        `NL (POLYMOD)`= ""
+                        
+)
+# Create empty sample column
+all_mean_polymod[, sample := ""]
+adult_mean_polymod[, sample := ""]
+child_mean_polymod[, sample := ""]
+
+## merge CoMix and Polymod
+all_mean <- cbind(all_mean, all_mean_polymod)
+adult_mean <- cbind(adult_mean, adult_mean_polymod)
+child_mean <- cbind(child_mean, child_mean_polymod)
+
+## Reorder columns
+all_mean <- all_mean[, .(sample, variable, UK,`UK (POLYMOD)`, BE,`BE (POLYMOD)`, NL,`NL (POLYMOD)`, CH)]
+adult_mean <- adult_mean[, .(sample, variable, UK,`UK (POLYMOD)`, BE,`BE (POLYMOD)`, NL,`NL (POLYMOD)`, CH)]
+child_mean <- child_mean[, .(sample, variable, UK,`UK (POLYMOD)`, BE,`BE (POLYMOD)`, NL,`NL (POLYMOD)`, CH)]
+
+all_row <- data.table(
+  sample = "All",
+  variable = "",
+  UK = "",
+  `UK (POLYMOD)`= "",
+  BE = "",
+  `BE (POLYMOD)`= "",
+  NL = "",
+  `NL (POLYMOD)`= "",
+  CH = ""
+)
+adult_row <- data.table(
+  sample = "Adults",
+  variable = "",
+  UK = "",
+  `UK (POLYMOD)`= "",
+  BE = "",
+  `BE (POLYMOD)`= "",
+  NL = "",
+  `NL (POLYMOD)`= "",
+  CH = ""
+)
+child_row <- data.table(
+  sample = "Children",
+  variable = "",
+  UK = "",
+  `UK (POLYMOD)`= "",
+  BE = "",
+  `BE (POLYMOD)`= "",
+  NL = "",
+  `NL (POLYMOD)`= "",
+  CH = ""
+)
+
+
+combined_dta <- rbind(
+  all_row,
+  all_mean,
+  adult_row,
+  adult_mean,
+  child_row,
+  child_mean)
+
+
+
 tab2 <- combined_dta %>% 
   flextable()
-
-
 save_as_docx(tab2, path = "outputs/tab2_contacts.docx")
-
-

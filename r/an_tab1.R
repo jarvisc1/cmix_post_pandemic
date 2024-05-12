@@ -51,18 +51,26 @@ dt <- dt[, .(
   ## Extra
   part_employed,
   part_work_place,
-  part_attend_work_yesterday
+  part_attend_work_yesterday,
+  part_employstatus ## Added full emply-status
   )]
 
+## Fixing part_employed to include unemployment and retired
+dt[grepl("unemp",dt$part_employstatus), part_employed := "Unemployed"]
+dt[dt$part_employstatus=="full-time parent homemaker", part_employed := "Unemployed"]
+dt[dt$part_employstatus=="long-term sick or disabled", part_employed := "Unemployed"]
+dt[dt$part_employstatus=="student/pupil", part_employed := "Unemployed"]
+dt[dt$part_employstatus=="retired", part_employed := "Retired"]
+
 dt[is.na(part_employed), part_employed := "remove"]
-dt[is.na(part_attend_work_yesterday), part_employed := "remove"]
-dt[is.na(part_work_place), part_employed := "remove"]
+#dt[is.na(part_attend_work_yesterday), part_employed := "remove"]
+#dt[is.na(part_work_place), part_employed := "remove"]
 dt[, part_symp_ache := max(part_symp_bodyaches,
                            part_symp_headache,
                            na.rm = TRUE),
    by = part_uid]
 
-dt[, part_symp_fatigue := as.numeric(part_symp_fatigue)]
+dt[, part_symp_fatigue := as.integer(part_symp_fatigue)]
 
 dt[, part_symp_any := max(part_symp_fever,
                           part_symp_cough,
@@ -70,7 +78,7 @@ dt[, part_symp_any := max(part_symp_fever,
                           part_symp_ache,
                           part_symp_congestion,
                           part_symp_sore_throat,
-                          part_symp_fatigue, na.rm = TRUE),
+                          part_symp_fatigue),
    by = part_uid]
 
 dt_copy <- dt
@@ -87,7 +95,7 @@ dta[, table(country)]
 # Get percentages ---------------------------------------------------------
 
 ## Will remove unknown and not include in perc calculation
-## Using the get function turns the varibale name to get
+## Using the get function turns the variable name to get
 get_perc <- function(dt_, group_var_, adult = FALSE){
   top <- dt_[, .(num = .N), by = .(country, get(group_var_))]
   bottom <- dt_[!is.na(get(group_var_)) & !(get(group_var_) %in% c("Unknown", "Other", "remove")),
@@ -154,9 +162,12 @@ row_hh    <- dcast(per_hh, get ~ country, value.var = "text")
 row_day   <- dcast(per_day, get ~ country, value.var = "text")
 
 ## Risk perception
-row_likely <- dcast(per_att_likely[get == "Strongly agree"], get ~ country, value.var = "text")
-row_serious <- dcast(per_att_serious[get == "Strongly agree"], get ~ country, value.var = "text")
-row_spread <- dcast(per_att_spread[get == "Strongly agree"], get ~ country, value.var = "text")
+# row_likely <- dcast(per_att_likely[get == "Strongly agree"], get ~ country, value.var = "text")
+# row_serious <- dcast(per_att_serious[get == "Strongly agree"], get ~ country, value.var = "text")
+# row_spread <- dcast(per_att_spread[get == "Strongly agree"], get ~ country, value.var = "text")
+row_likely <- dcast(per_att_likely, get ~ country, value.var = "text")
+row_serious <- dcast(per_att_serious, get ~ country, value.var = "text")
+row_spread <- dcast(per_att_spread, get ~ country, value.var = "text")
 
 
 ## Risk mitigation
@@ -176,7 +187,11 @@ row_symp_any <- dcast(per_symp_any[get == 1], get ~ country, value.var = "text")
 
 
 ## Employment
-row_employed   <- dcast(per_employed, get ~ country, value.var = "text")
+row_employed   <- dcast(data = per_employed, get ~ country, value.var = "text")
+#reorder the lines of row_employed to have the value of column "get" ordered not in alphabetical order but according to order c("Full time","Part time","Self employed,"Unemployed,"Retired")
+row_employed <- row_employed[order(match(row_employed$get, c("Full time","Part time","Self employed","Unemployed","Retired")))]
+
+
 row_workopen   <- dcast(per_workopen, get ~ country, value.var = "text")
 row_attend   <- dcast(per_attend[get == "yes"], get ~ country, value.var = "text")
 
@@ -209,9 +224,12 @@ row_06   <- make_row(row_hh, cat = "Household size", val = row_hh$get, top_row =
 row_07   <- make_row(row_day, cat = "Day of week", val = row_day$get, top_row = TRUE)
 
 ## Risk perception
-row_08 <- make_row(row_likely, cat = "Risk perception (Adults)", val = "Catching coronavirus")
-row_09 <- make_row(row_serious, cat = "", val = "Serious illness from coronavirus")
-row_10 <- make_row(row_spread, cat = "", val = "Spreading coronavirus to vulnerable people")
+#row_08 <- make_row(row_likely, cat = "Risk perception (Adults)", val = "Catching coronavirus")
+row_08 <- make_row(row_likely, top_row=TRUE, cat ="Perceived susceptibility (Adults)", val = row_likely$get)
+#row_09 <- make_row(row_serious, cat = "", val = "Serious illness from coronavirus")
+row_09 <- make_row(row_serious, cat = "Perceived severity (Adults)", val =row_serious$get , top_row=TRUE)
+#row_10 <- make_row(row_spread, cat = "", val = "Spreading coronavirus to vulnerable people")
+row_10 <- make_row(row_spread, cat = "Perceived risk to the vulnerable (Adults)", val = row_spread$get, top_row=TRUE)
 
 ## Risk mitigation
 row_11   <- make_row(row_fm, cat = "Risk mitigation (Adults)", val = "Face mask")
