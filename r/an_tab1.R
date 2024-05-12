@@ -153,47 +153,47 @@ per_attend <- get_perc(dta[sample_type == "adult"], "part_attend_work_yesterday"
 ## Now reshape the above function made all vars to get
 
 ## Characteristics
-row_count <- dcast(dta, . ~ country, )
-row_adult <- dcast(per_adult, get ~ country, value.var = "text")
-row_age_child   <- dcast(per_age_child, get ~ country, value.var = "text")
-row_age_adult   <- dcast(per_age_adult, get ~ country, value.var = "text")
-row_gen   <- dcast(per_gen, get ~ country, value.var = "text")
-row_hh    <- dcast(per_hh, get ~ country, value.var = "text")
-row_day   <- dcast(per_day, get ~ country, value.var = "text")
+row_count <- data.table::dcast(dta, . ~ country, )
+row_adult <- data.table::dcast(per_adult, get ~ country, value.var = "text")
+row_age_child   <- data.table::dcast(per_age_child, get ~ country, value.var = "text")
+row_age_adult   <- data.table::dcast(per_age_adult, get ~ country, value.var = "text")
+row_gen   <- data.table::dcast(per_gen, get ~ country, value.var = "text")
+row_hh    <- data.table::dcast(per_hh, get ~ country, value.var = "text")
+row_day   <- data.table::dcast(per_day, get ~ country, value.var = "text")
 
 ## Risk perception
-# row_likely <- dcast(per_att_likely[get == "Strongly agree"], get ~ country, value.var = "text")
-# row_serious <- dcast(per_att_serious[get == "Strongly agree"], get ~ country, value.var = "text")
-# row_spread <- dcast(per_att_spread[get == "Strongly agree"], get ~ country, value.var = "text")
-row_likely <- dcast(per_att_likely, get ~ country, value.var = "text")
-row_serious <- dcast(per_att_serious, get ~ country, value.var = "text")
-row_spread <- dcast(per_att_spread, get ~ country, value.var = "text")
+# row_likely <- data.table::dcast(per_att_likely[get == "Strongly agree"], get ~ country, value.var = "text")
+# row_serious <- data.table::dcast(per_att_serious[get == "Strongly agree"], get ~ country, value.var = "text")
+# row_spread <- data.table::dcast(per_att_spread[get == "Strongly agree"], get ~ country, value.var = "text")
+row_likely <- data.table::dcast(per_att_likely, get ~ country, value.var = "text")
+row_serious <- data.table::dcast(per_att_serious, get ~ country, value.var = "text")
+row_spread <- data.table::dcast(per_att_spread, get ~ country, value.var = "text")
 
 
 ## Risk mitigation
-row_fm   <- dcast(per_fm[get == "Yes"], get ~ country, value.var = "text")
-row_vc   <- dcast(per_vc[get == "Yes"], get ~ country, value.var = "text")
-row_hr   <- dcast(per_hr[get == "Yes"], get ~ country, value.var = "text")
+row_fm   <- data.table::dcast(per_fm[get == "Yes"], get ~ country, value.var = "text")
+row_vc   <- data.table::dcast(per_vc[get == "Yes"], get ~ country, value.var = "text")
+row_hr   <- data.table::dcast(per_hr[get == "Yes"], get ~ country, value.var = "text")
 
 ## Symptoms
-row_symp_fev <- dcast(per_symp_fev[get == 1], get ~ country, value.var = "text")
-row_symp_cough <- dcast(per_symp_cough[get == 1], get ~ country, value.var = "text")
-row_symp_sob <- dcast(per_symp_sob[get == 1], get ~ country, value.var = "text")
-row_symp_ache <- dcast(per_symp_ache[get == 1], get ~ country, value.var = "text")
-row_symp_cong <- dcast(per_symp_cong[get == 1], get ~ country, value.var = "text")
-row_symp_st <- dcast(per_symp_st[get == 1], get ~ country, value.var = "text")
-row_symp_fatigue <- dcast(per_symp_fatigue[get == 1], get ~ country, value.var = "text")
-row_symp_any <- dcast(per_symp_any[get == 1], get ~ country, value.var = "text")
+row_symp_fev <- data.table::dcast(per_symp_fev[get == 1], get ~ country, value.var = "text")
+row_symp_cough <- data.table::dcast(per_symp_cough[get == 1], get ~ country, value.var = "text")
+row_symp_sob <- data.table::dcast(per_symp_sob[get == 1], get ~ country, value.var = "text")
+row_symp_ache <- data.table::dcast(per_symp_ache[get == 1], get ~ country, value.var = "text")
+row_symp_cong <- data.table::dcast(per_symp_cong[get == 1], get ~ country, value.var = "text")
+row_symp_st <- data.table::dcast(per_symp_st[get == 1], get ~ country, value.var = "text")
+row_symp_fatigue <- data.table::dcast(per_symp_fatigue[get == 1], get ~ country, value.var = "text")
+row_symp_any <- data.table::dcast(per_symp_any[get == 1], get ~ country, value.var = "text")
 
 
 ## Employment
-row_employed   <- dcast(data = per_employed, get ~ country, value.var = "text")
+row_employed   <- data.table::dcast(data = per_employed, get ~ country, value.var = "text")
 #reorder the lines of row_employed to have the value of column "get" ordered not in alphabetical order but according to order c("Full time","Part time","Self employed,"Unemployed,"Retired")
 row_employed <- row_employed[order(match(row_employed$get, c("Full time","Part time","Self employed","Unemployed","Retired")))]
 
 
-row_workopen   <- dcast(per_workopen, get ~ country, value.var = "text")
-row_attend   <- dcast(per_attend[get == "yes"], get ~ country, value.var = "text")
+row_workopen   <- data.table::dcast(per_workopen, get ~ country, value.var = "text")
+row_attend   <- data.table::dcast(per_attend[get == "yes"], get ~ country, value.var = "text")
 
 row_count[, All := formatC(All, big.mark = ",")] 
 row_count[, UK  := formatC(UK, big.mark = ",")] 
