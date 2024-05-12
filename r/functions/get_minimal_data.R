@@ -21,8 +21,8 @@ library(data.table)
 
 get_minimal_data <- function(countries = c('uk', "be", "ch", "nl")){
   
-  prt = qs::qread('data/part_min.qs')
-  cnt = qs::qread('data/contacts.qs')
+  prt = qs::qread('../comix/data/part_min.qs')
+  cnt = qs::qread('../comix/data/contacts.qs')
   
   # filter to be correct countries ------------------------------------------
   prt <- prt[country %in% countries]

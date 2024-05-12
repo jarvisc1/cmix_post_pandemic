@@ -90,7 +90,7 @@ sample_age_table <- function(prts, cnts, agegroupbreaks){
 
 # extract the population data (Punked this off previous codebase by Kevin?)
 getPopdata <- function(country_code="uk", iso3=NULL, year=as.numeric(format(Sys.Date(), "%Y"))){
-  popdata <- qs::qread(file.path("data/unwpp_data.qs"))
+  popdata <- qs::qread(file.path("./data/unwpp_data.qs"))
   
   if(is.null(iso3)){
     iso3_ <- switch(
