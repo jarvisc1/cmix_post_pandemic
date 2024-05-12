@@ -6,12 +6,12 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 library(socialmixr)
-
+library(forcats)
 
 # Load data ---------------------------------------------------------------
 cnts <- qs::qread('data/wrapup_contacts.qs')
 
-cnts <- cnts[survey_round == 1000]
+
 country_levs <- c("all", "uk", "be", "nl", "ch")
 country_labs <- c("All", "UK", "BE", "NL", "CH")
 cnts[, country := factor(country, levels = country_levs, labels = country_labs)]
@@ -23,14 +23,14 @@ table(cnts$cnt_frequency)
 table(cnts$cnt_type)
 table(cnts$cnt_main_type)
 table(cnts$cnt_total_time)
-table(cnts$cnt_phys)
+table(cnts$phys_contact)
 table(cnts$cnt_prec_mask)
 
 
-cnts[, cnt_phys := factor(cnt_phys, levels = c(1,0), labels = c("Yes", "No"))]
+cnts[, phys_contact := factor(phys_contact, levels = c(1,2), labels = c("Yes", "No"))]
 cnts[, cnt_prec_2m_plus := factor(cnt_prec_2m_plus, levels = c(1,0), labels = c("Yes", "No"))]
 cnts[, cnt_prec_mask := factor(cnt_prec_mask, levels = c(1,0), labels = c("Yes", "No"))]
-cnts[, cnt_outside := factor(cnt_outside, levels = c(1,0), labels = c("Yes", "No"))]
+cnts[, cnt_outside := factor(cnt_outside, levels = c(TRUE,FALSE), labels = c("Yes", "No"))]
 
 # Load Polymod data -------------------------------------------------------
 
@@ -50,7 +50,7 @@ conts_poly[country == "Belgium", country := "BE"]
 conts_poly[country == "Netherlands", country := "NL"]
 
 ## Convert to Yes and No
-conts_poly[, cnt_phys := factor(phys_contact, levels = c(1,2), labels = c("Yes", "No"))]
+conts_poly[, phys_contact := factor(phys_contact, levels = c(1,2), labels = c("Yes", "No"))]
 
 ## Adapt frequency
 conts_poly[, cnt_frequency := factor(frequency_multi, levels = 1:5,
@@ -59,13 +59,13 @@ conts_poly[, cnt_frequency := factor(frequency_multi, levels = 1:5,
 conts_poly[, cnt_total_time := factor(duration_multi, levels = 1:5, labels = 
                                         c("<5m", "5m-14m", "15m-59m", "60m-4h", "4h+"))]
 
-pmod_phy_freq <- conts_poly[!is.na(cnt_frequency), .(.N, perc = sum(cnt_phys == "No", na.rm = T)/sum(cnt_phys %in% c("Yes", "No"),  na.rm = T)), 
+pmod_phy_freq <- conts_poly[!is.na(cnt_frequency), .(.N, perc = sum(phys_contact == "No", na.rm = T)/sum(phys_contact %in% c("Yes", "No"),  na.rm = T)), 
                             by = .(cnt_frequency, country)]
 
 # Frequency ----------------------------------------------------------------
 p_freq_phys <- ggplot(cnts[!is.na(cnt_frequency)]) +
-  geom_bar(aes(x = cnt_frequency, fill = cnt_phys), position = "fill") +
-  geom_point(data = pmod_phy_freq, aes(y = perc, x = cnt_frequency,
+  geom_bar(aes(x = cnt_frequency, fill = fct_rev(phys_contact)), position = "fill") +
+  geom_point(data = pmod_phy_freq, aes(y = 1-perc, x = cnt_frequency,
                                        pch = "POLYMOD", col = "POLYMOD"),
              size = 3) +
   geom_hline(yintercept = seq(0,1, 0.1), col = "white") +
@@ -82,9 +82,9 @@ p_freq_phys <- ggplot(cnts[!is.na(cnt_frequency)]) +
         strip.text.x = element_text(angle = 0, hjust = 0))
 
 p_freq_prec <- ggplot(cnts[!is.na(cnt_frequency) & !is.na(cnt_prec_2m_plus)]) +
-  geom_bar(aes(x = cnt_frequency, fill = cnt_prec_2m_plus), position = "fill") +
+  geom_bar(aes(x = cnt_frequency, fill = fct_rev(cnt_prec_2m_plus)), position = "fill") +
   geom_hline(yintercept = seq(0,1, 0.1), col = "white") +
-  scale_fill_manual(values = c("darkred", "grey"), name = "") +
+  scale_fill_manual(values = c("Yes" = "darkred", "No" = "grey"), name = "") +
   scale_y_continuous(expand = expansion(0),
                      labels = scales::percent_format(accuracy = 1)) +
   labs(x = "", y = "%", subtitle = "B: 2 meter distance?") +
@@ -96,9 +96,9 @@ p_freq_prec <- ggplot(cnts[!is.na(cnt_frequency) & !is.na(cnt_prec_2m_plus)]) +
         strip.text.x = element_text(angle = 0, hjust = 0))
 
 p_freq_prec_mask <- ggplot(cnts[!is.na(cnt_frequency)]) +
-  geom_bar(aes(x = cnt_frequency, fill = cnt_prec_mask), position = "fill") +
+  geom_bar(aes(x = cnt_frequency, fill = fct_rev(cnt_prec_mask)), position = "fill") +
   geom_hline(yintercept = seq(0,1, 0.1), col = "white") +
-  scale_fill_manual(values = c("darkred", "grey"), name = "") +
+  scale_fill_manual(values = c("Yes" = "darkred", "No" = "grey"), name = "") +
   scale_y_continuous(expand = expansion(0),
                      labels = scales::percent_format(accuracy = 1)) +
   labs(x = "", y = "%", subtitle = "C: Wore a mask?") +
@@ -110,9 +110,9 @@ p_freq_prec_mask <- ggplot(cnts[!is.na(cnt_frequency)]) +
         strip.text.x = element_text(angle = 0, hjust = 0))
 
 p_freq_prec_outside <- ggplot(cnts[!is.na(cnt_frequency) & !is.na(cnt_outside)]) +
-  geom_bar(aes(x = cnt_frequency, fill = cnt_outside), position = "fill") +
+  geom_bar(aes(x = cnt_frequency, fill = fct_rev(cnt_outside)), position = "fill") +
   geom_hline(yintercept = seq(0,1, 0.1), col = "white") +
-  scale_fill_manual(values = c("darkred", "grey"), name = "") +
+  scale_fill_manual(values = c("Yes" = "darkred", "No" = "grey"), name = "") +
   scale_y_continuous(expand = expansion(0),
                      labels = scales::percent_format(accuracy = 1)) +
   labs(x = "", y = "%", subtitle = "D: Met outside?") +
@@ -129,5 +129,5 @@ p_freq <- (p_freq_phys | p_freq_prec | p_freq_prec_mask | p_freq_prec_outside) +
     guides = "collect")  & theme(legend.position = "bottom")
 
 
-ggsave(filename = "Outputs/fig1_bar_freq.png", plot = p_freq, height = 10, width = 12) 
+ggsave(filename = "outputs/fig1_bar_freq.png", plot = p_freq, height = 10, width = 12) 
 
