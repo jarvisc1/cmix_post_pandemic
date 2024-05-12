@@ -108,6 +108,11 @@ empty_row <- data.table(variable = "",
                   CH = ""
                   )
 # Create empty sample column
+all_mean<-data.table(all_mean)
+adult_mean<-data.table(adult_mean)
+child_mean<-data.table(child_mean)
+
+
 all_mean[, sample := ""]
 adult_mean[, sample := ""]
 child_mean[, sample := ""]
@@ -328,6 +333,11 @@ empty_row_polymod <- data.table(variable = "",
                         
 )
 # Create empty sample column
+all_mean_polymod<-data.table(all_mean_polymod)
+adult_mean_polymod<-data.table(adult_mean_polymod)
+child_mean_polymod<-data.table(child_mean_polymod)
+
+
 all_mean_polymod[, sample := ""]
 adult_mean_polymod[, sample := ""]
 child_mean_polymod[, sample := ""]
