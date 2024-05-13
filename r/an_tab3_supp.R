@@ -144,21 +144,21 @@ contacts_tab <- function(contact_sett) {
   ## Now reshape the above function made all vars to get
   
   ## Characteristics
-  row_count <- dcast(mean_cnt, . ~ country)
-  row_adult <- dcast(per_adult, get ~ country, value.var = "text")
-  row_age_child   <- dcast(per_age_child, get ~ country, value.var = "text")
-  row_age_adult   <- dcast(per_age_adult, get ~ country, value.var = "text")
-  row_gen   <- dcast(per_gen, get ~ country, value.var = "text")
-  row_hh    <- dcast(per_hh, get ~ country, value.var = "text")
-  row_day   <- dcast(per_day, get ~ country, value.var = "text")
+  row_count <- data.table::dcast(mean_cnt, . ~ country)
+  row_adult <- data.table::dcast(per_adult, get ~ country, value.var = "text")
+  row_age_child   <- data.table::dcast(per_age_child, get ~ country, value.var = "text")
+  row_age_adult   <- data.table::dcast(per_age_adult, get ~ country, value.var = "text")
+  row_gen   <- data.table::dcast(per_gen, get ~ country, value.var = "text")
+  row_hh    <- data.table::dcast(per_hh, get ~ country, value.var = "text")
+  row_day   <- data.table::dcast(per_day, get ~ country, value.var = "text")
   ## Risk mitigation
-  row_fm   <- dcast(per_fm, get ~ country, value.var = "text")
-  row_vc   <- dcast(per_vc, get ~ country, value.var = "text")
-  row_hr   <- dcast(per_hr, get ~ country, value.var = "text")
+  row_fm   <- data.table::dcast(per_fm, get ~ country, value.var = "text")
+  row_vc   <- data.table::dcast(per_vc, get ~ country, value.var = "text")
+  row_hr   <- data.table::dcast(per_hr, get ~ country, value.var = "text")
   # Employment
-  row_employed   <- dcast(per_employed, get ~ country, value.var = "text")
-  row_workopen   <- dcast(per_workopen, get ~ country, value.var = "text")
-  row_attend   <- dcast(per_attend, get ~ country, value.var = "text")
+  row_employed   <- data.table::dcast(per_employed, get ~ country, value.var = "text")
+  row_workopen   <- data.table::dcast(per_workopen, get ~ country, value.var = "text")
+  row_attend   <- data.table::dcast(per_attend, get ~ country, value.var = "text")
   #row_cnt <- dcast(mean_cnt, . ~ country)
   
   row_count[, UK  := formatC(UK, big.mark = ",")] 
