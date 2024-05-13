@@ -182,7 +182,7 @@ row_hr   <- data.table::dcast(per_hr, get ~ country, value.var = "text")
 row_employed   <- data.table::dcast(per_employed, get ~ country, value.var = "text")
 row_workopen   <- data.table::dcast(per_workopen, get ~ country, value.var = "text")
 row_attend   <- data.table::dcast(per_attend, get ~ country, value.var = "text")
-#row_cnt <- dcast(mean_cnt, . ~ country)
+#row_cnt <- data.table::dcast(mean_cnt, . ~ country)
 
 #row_count[, All := formatC(All, big.mark = ",")] 
 row_count[, UK  := formatC(UK, big.mark = ",")] 

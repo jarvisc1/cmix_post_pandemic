@@ -57,4 +57,4 @@ error_plot <- ggplot(dt_error) +
         legend.key.size = unit(0.5, 'cm'),
         legend.key.width = unit(0.2, 'cm'))
 
-ggsave("outputs/fig_SI1_CH_SA.png",plot = error_plot, height = 6, width = 9)
+ggsave(filename="outputs/fig_SI1_CH_SA.jpeg",plot = error_plot, height = 6, width = 9)

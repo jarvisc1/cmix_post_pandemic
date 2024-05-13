@@ -7,6 +7,7 @@ library(flextable)
 library(gtsummary)
 library(magrittr)
 library(ggplot2)
+library(gridExtra)
 library(wpp2022)
 library(dplyr)
 if(require(rstudioapi) && isAvailable()){
@@ -29,11 +30,11 @@ dt <- dt[, .(
   sample_type,
   part_gender, 
   country,
-  area_2_name,
-  part_social_group,                                    
-  part_social_group_be,
-  part_social_group_score_be,                           
-  part_social_group1, 
+  #area_2_name,
+  # part_social_group,                                    
+  # part_social_group_be,
+  # part_social_group_score_be,                           
+  # part_social_group1, 
   ## Extra
   part_employed
   )]
@@ -127,93 +128,6 @@ for(name_country in name_countries){
 }
 
 final_plot<-grid.arrange(grobs = plot_list, ncol = 2)
-ggsave(final_plot,filename=paste0("sample_vs_population.jpeg"),width=10,height=5)
-
-
-## Only Adults loop
-for(name_country in name_countries){
-  #name_country<-name_countries[1]
-  name_country_in_survey<-name_countries_in_survey[which(name_countries==name_country)]
-  this_perc_adult<-per_age_adult %>%filter(get!="Unknown") %>%filter(country==name_country_in_survey)
-  
-# Subset the data for the country
-this_country_data <- subset(popAge1dt, name == name_country)
-this_country_data <- subset(this_country_data, year == "2021")
-
-age_min_values<-c(0,5,12,18,30,40,50,60,70)
-age_max_values<-c(4,11,17,29,39,49,59,69,100)
-
-# Apply the function to all combinations of age_min and age_max for each data frame
-total_sums <- mapply(calculate_sum, 
-                     MoreArgs = list(data = this_country_data),
-                     age_min = age_min_values, 
-                     age_max = age_max_values)
-results_df <- data.frame(age_min = age_min_values,
-                         age_max = age_max_values,
-                         total_sums = total_sums)
-
-results_df_adults<-results_df %>% filter(age_min>=18)
-results_df_adults$perc<-results_df_adults$total_sums/sum(results_df_adults$total_sums)*100
-
-# generate a new column that is the combination of age_min and age_max
-results_df_adults$age_group<-paste0(results_df_adults$age_min,"-",results_df_adults$age_max)
-# change age_group 70-100 into 70+
-results_df_adults$age_group[results_df_adults$age_group=="70-100"]<-"70+"
-# attach columns age_group and perc of results_df_adult to this_per_age_adult by matching column age_group with column get
-this_perc_adult<-merge(this_perc_adult,results_df_adults[,c("age_group","perc")],by.x="get",by.y="age_group",all.x=TRUE)
-#extract from column text the percentage between brackets
-this_perc_adult$perc_sample<-as.numeric(gsub(".*\\((.*)%\\).*","\\1",this_perc_adult$text))
-#generate a plot of comparison of perc and perc_sample, with two bars next to each other and 5% error on perc_sample
-ggplot(this_perc_adult,aes(x=get,y=perc_sample))+
-  geom_bar(stat="identity",position="dodge",fill="blue",width=0.5,alpha=0.5)+
-  geom_errorbar(aes(ymin=perc_sample-5.,ymax=perc_sample+5.),width=0.2)+
-  geom_bar(aes(y=perc),stat="identity",position="dodge",fill="red",width=0.5,alpha=0.5)+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  labs(title="Comparison of perc and perc_sample",x="age_group",y="percentage")+theme_minimal()
-
-}
-
-## Only Children loop
-for(name_country in name_countries){
-  #name_country<-name_countries[1]
-  name_country_in_survey<-name_countries_in_survey[which(name_countries==name_country)]
-  this_perc_child<-per_age_child %>%filter(get!="Unknown") %>%filter(country==name_country_in_survey)
-  
-  # Subset the data for the country
-  this_country_data <- subset(popAge1dt, name == name_country)
-  this_country_data <- subset(this_country_data, year == "2021")
-  
-  age_min_values<-c(0,5,12,18,30,40,50,60,70)
-  age_max_values<-c(4,11,17,29,39,49,59,69,100)
-  
-  # Apply the function to all combinations of age_min and age_max for each data frame
-  total_sums <- mapply(calculate_sum, 
-                       MoreArgs = list(data = this_country_data),
-                       age_min = age_min_values, 
-                       age_max = age_max_values)
-  results_df <- data.frame(age_min = age_min_values,
-                           age_max = age_max_values,
-                           total_sums = total_sums)
-  
-  results_df_child<-results_df %>% filter(age_min<18)
-  results_df_child$perc<-results_df_child$total_sums/sum(results_df_child$total_sums)*100
-  
-  # generate a new column that is the combination of age_min and age_max
-  results_df_child$age_group<-paste0(results_df_child$age_min,"-",results_df_child$age_max)
-  # attach columns age_group and perc of results_df_adult to this_per_age_adult by matching column age_group with column get
-  this_perc_child<-merge(this_perc_child,results_df_child[,c("age_group","perc")],by.x="get",by.y="age_group",all.x=TRUE)
-  #extract from column text the percentage between brackets
-  this_perc_child$perc_sample<-as.numeric(gsub(".*\\((.*)%\\).*","\\1",this_perc_child$text))
-  #generate a plot of comparison of perc and perc_sample, with two bars next to each other and 5% error on perc_sample
-  ggplot(this_perc_child,aes(x=get,y=perc_sample))+
-    geom_bar(stat="identity",position="dodge",fill="blue",width=0.5,alpha=0.5)+
-    geom_errorbar(aes(ymin=perc_sample-5.,ymax=perc_sample+5.),width=0.2)+
-    geom_bar(aes(y=perc),stat="identity",position="dodge",fill="red",width=0.5,alpha=0.5)+
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    labs(title="Comparison of perc and perc_sample",x="age_group",y="percentage")+theme_minimal()
-  ggsave(paste0("sample_vs_population_children_",name_country,".jpeg"),width=10,height=5)
-}
-
-
+ggsave(final_plot,filename=paste0("../output/sample_vs_population.jpeg"),width=10,height=5)
 
 
